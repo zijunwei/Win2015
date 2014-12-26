@@ -2,6 +2,9 @@
 *.jpg
 *.avi
 *.mp4
+!actioncliptrain00821.avi
+!actioncliptrain00822.avi
+!actioncliptrain00823.avi
 *.txt
 *.mat
 !GMM.mat
