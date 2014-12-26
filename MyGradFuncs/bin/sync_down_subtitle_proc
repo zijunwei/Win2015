@@ -1,0 +1,21 @@
+# sync down from Titan, /data/subtitle_proc/ to Lacie hard drive
+# Must be run within the directory: /Volumes/LaCie/DataSets/subtitle_proc
+# The data directory of Titan must be mounted
+localDir=$PWD
+desktopDir=/Volumes/data/subtitle_proc/${localDir:37}
+
+
+if [ $# -eq 0 ]; then
+   command='rsync -av '$desktopDir'/ '$PWD
+   echo $command
+   $command
+else
+   for f in $@ 
+   do
+      command='rsync -av '$desktopDir'/'$f' '$PWD
+      echo $command
+      $command
+   done
+fi
+
+

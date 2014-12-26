@@ -1,0 +1,15 @@
+localDir=$PWD
+desktopDir=/home/minhhoai/${localDir:12}
+
+if [ $# -eq 0 ]; then
+   command='rsync -avz -e "ssh -p 159" --progress '$PWD'/ minhhoai@minhhoai.cs.stonybrook.edu:'$desktopDir
+   echo $command
+   eval $command
+else
+   for f in $@ 
+   do
+      command='rsync -avz -e "ssh -p 159" --progress '$PWD'/'$f' minhhoai@minhhoai.cs.stonybrook.edu:'$desktopDir
+      echo $command
+      eval $command
+   done
+fi

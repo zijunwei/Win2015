@@ -1,0 +1,68 @@
+/* m_mexGC.cpp
+ * Matlab interface for graph cut maxflow algorithm.
+ * By: Minh Hoai Nguyen
+ * Date: 26 July 07
+ */
+
+
+#include "mex.h"
+#include <stdio.h>
+#include "graph.h"
+#include <map>
+
+using namespace std;
+
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
+    /* check for the proper no. of input and outputs */
+    if (nrhs != 2)
+        mexErrMsgTxt("2 input arguments are required");
+    if (nlhs>1)
+        mexErrMsgTxt("Too many outputs");
+    
+    int nNodes = mxGetM(prhs[0]);
+    int nEdges = mxGetM(prhs[1]);
+
+    double *nodeData = mxGetPr(prhs[0]);
+    double *edgeData = mxGetPr(prhs[1]);
+    
+    map<int, int> nodeIDs;
+    
+    typedef Graph<int,int,int> GraphType;
+	GraphType *g = new GraphType(nNodes, nEdges); 
+
+
+    for (int i=0; i < nNodes; i++){
+//         mexPrintf("%4.2f %4.2f %4.2f\n", nodeData[i], nodeData[i+nNodes], nodeData[i+2*nNodes]);
+        g->add_node(); 
+        g->add_tweights(i, nodeData[i+nNodes], nodeData[i+2*nNodes]);
+        nodeIDs[nodeData[i]] = i;
+    }
+    
+    for (int i=0; i < nEdges; i++){
+//         mexPrintf("%4.2f %4.2f %4.2f %4.2f\n", 
+//             edgeData[i], edgeData[i+nEdges], edgeData[i+2*nEdges], edgeData[i+3*nEdges]);
+        int node1 = nodeIDs[edgeData[i]];
+        int node2 = nodeIDs[edgeData[i+nEdges]];
+//         mexPrintf("%d %d %4.2f %4.2f\n", node1, node2, edgeData[i+2*nEdges], edgeData[i+3*nEdges]);
+        g -> add_edge(node1, node2, edgeData[i+2*nEdges], edgeData[i+3*nEdges]);        
+    }
+    
+	int flow = g->maxflow();
+
+	mexPrintf("Flow = %d\n", flow);
+	mexPrintf("Minimum cut:\n");
+    plhs[0] = mxCreateDoubleMatrix(nNodes, 1, mxREAL);
+    double *output = mxGetPr(plhs[0]);    
+    for (int i=0; i < nNodes; i++){
+        if (g->what_segment(i) == GraphType::SOURCE){
+            mexPrintf("node %d is in the SOURCE set\n", (int)nodeData[i]);
+            output[i] = 1;        
+        } else{
+            mexPrintf("node %d is in the SINK set\n", (int)nodeData[i]);
+            output[i] = 0;
+        }
+    }
+	delete g;   
+}
+    
+    

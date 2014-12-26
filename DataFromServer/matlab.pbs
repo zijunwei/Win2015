@@ -1,0 +1,32 @@
+#!/bin/sh
+#PBS -N Matlab
+#PBS -m be 
+#PBS -j oe
+
+
+PBS_O_WORKDIR=/home/hzwzijun/Win2015
+export PBS_O_WORKDIR
+
+### ---------------------------------------
+### BEGINNING OF EXECUTION
+### ---------------------------------------
+
+###echo The master node of this job is `hostname`
+###echo The working directory is `echo $PBS_O_WORKDIR`
+echo This job runs on the following nodes:
+###echo `cat $PBS_NODEFILE`
+
+### end of information preamble
+
+
+cd $PBS_O_WORKDIR
+
+
+
+
+matlab -nojvm -nodisplay -nodesktop -nosplash <<EOF
+setup
+exit;
+EOF
+
+

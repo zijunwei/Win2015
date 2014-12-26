@@ -1,0 +1,16 @@
+localDir=$PWD
+remoteDir=/homes/33/minhhoai/WWW/${localDir:28}
+
+if [ $# -eq 0 ]; then
+   command='rsync -avz '$PWD'/'$1' minhhoai@robots.ox.ac.uk:'$remoteDir
+   echo $command
+   $command
+else
+   for f in $@ 
+   do
+      #command='rsync -avz '$PWD'/'$1' minhhoai@robots.ox.ac.uk:'$remoteDir
+      command='rsync -avz '$PWD'/'$f' minhhoai@robots.ox.ac.uk:'$remoteDir
+      echo $command
+      $command
+   done
+fi

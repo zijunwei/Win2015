@@ -1,0 +1,67 @@
+function [alphas, betas] = ml_HMM_isoGauss(Os, X1CPT, XtCPT, Thetas, sqrSigmas)
+% [alphas, betas] = ml_HMM_inference(Os, X1CPT, XtCPT, Thetas, sqrSigmas)
+% Inference of Hidden markov model, with discrete states, continuous observable.
+% P(Oi|Xi) has Gaussian emission probabilities with isotropic covariance matrix sigma^2*I.
+% Perform sum-product algorithm for HMM (forward-backward)
+%
+%   O1      O2              On
+%   ^       ^               ^
+%   |       |               |
+%   |       |               |
+%   X1 --> X2 --> .... --> Xn
+% Notations:
+%   m: the total number of states.
+%   n: the length of the sequence.
+%   k: the total number of different observable patterns.
+% Inputs:
+%   Os: the values of observed variables. This is a d*n matrix. Os(:,i) is the observed vector for O_i.
+%   X1CPT: CPT of the first state P(X1), this is a m*1 vector.
+%   XtCPT: CPT of state transition P(X(t+1)|Xt), this is a m*m matrix XtCPT(i,j) = P(State_i|State_j).
+%   Thetas: a n*m matrix, Thetas(:,i) is the mean of the Gaussian for state i.
+%   sqrSigmas: a m*1 column vector, the covariance of the Gaussian for state i is sqrSigmas(i)*I.
+% Outputs:
+%   alphas: a m*n matrix, alphas(:,i): accumulate messages from X(i-1) and Oi to node Xi, the messages are
+%       scaled so that the values are not too small.
+%   betas: a m*n matrix, betas(:,i) : accumulate messages from X(i+1) to node Xi. betas have also been scaled.
+%       Marginal probability of node Xi take value k and observing Os is p(Xi=k, Os) = alphas(k,i)*betas(k,i)/Z(i);
+%       Z(i) is a scaling factor that does not depend on k. To copute p(Xi=k|Os), we use:
+%       p(Xi=k|Os) = p(Xi=k, Os)/p(Os) = p(Xi=k,Os)/(sum_j (p(Xi=j,Os))) -> the Z(i) will be eliminated.
+% By: Minh Hoai Nguyen
+% Date: 6 Nov 2007.
+
+m = size(XtCPT, 1); % total number of states.
+n = length(Os); % length of the sequence.
+
+% forward backward algorithm
+% alphas(:,i): accumulate messages from the left and bottom to node i.
+% betas(:,i) : accumulate messages from the right to node i.
+% marginal probability of node i take value k is alphas(k,i)*betas(k,i);
+
+
+% GaussOtCPT(i,j) = Normal(O_i|Theta_j, sigma_j^2*I)
+d = size(Os,1);
+GaussOtCPT = ml_sqrDist(Os, Thetas);
+GaussOtCPT = 1/((2*pi)^(d/2))*exp(-0.5*GaussOtCPT./repmat(sqrSigmas', n, 1))./repmat(sqrSigmas'.^(d/2), n, 1);
+
+
+% forward pass
+alphas = zeros(m, n);
+alphas(:,1) = X1CPT.*GaussOtCPT(1,:)';
+
+for i = 2:n
+    alphas(:,i) = (XtCPT*alphas(:,i-1)).*GaussOtCPT(i,:)';    
+    
+    % scale to make alphas(:,i) not too small. You can multiply alphas(:,i) with anything.
+    alphas(:,i) = alphas(:,i)./sum(alphas(:,i));
+end;
+
+% backward pass
+betas = zeros(m, n);
+betas(:,n) = ones(m, 1);
+
+for i=n-1:-1:1
+    betas(:,i) = XtCPT'*(betas(:,i+1).*GaussOtCPT(i+1,:)');
+    
+    % scale to make betas(:,i) not too small. You can multiply betas(:,i) with anything.
+    betas(:,i)= betas(:,i)./sum(betas(:,i));
+end;

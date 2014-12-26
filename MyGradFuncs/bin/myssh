@@ -1,0 +1,7 @@
+if [ $# -eq 1 ]; then
+	command='ssh -Y -p 130 minhhoai@'$1'.cs.stonybrook.edu'
+	echo $command
+	eval $command
+else
+	echo 'USAGE: myssh machineName'   
+fi

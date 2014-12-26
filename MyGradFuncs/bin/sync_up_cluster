@@ -1,0 +1,16 @@
+localDir=$PWD
+desktopDir=/users/minhhoai/${localDir:12}
+
+if [ $# -eq 0 ]; then
+   command='rsync -avz '$PWD'/ minhhoai@titan.robots.ox.ac.uk:'$desktopDir
+   echo $command
+   $command
+else
+   for f in $@ 
+   do
+      #command='rsync -avz '$PWD'/'$1' minhhoai@titan.robots.ox.ac.uk:'$desktopDir
+      command='rsync -avz '$PWD'/'$f' minhhoai@titan.robots.ox.ac.uk:'$desktopDir
+      echo $command
+      $command
+   done
+fi

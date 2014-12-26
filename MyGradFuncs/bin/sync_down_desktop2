@@ -1,0 +1,15 @@
+localDir=$PWD
+desktopDir=/home/minhhoai/${localDir:12}
+
+if [ $# -eq 0 ]; then
+   command='rsync -avz --progress minhhoai@sbminhhoai.cs.stonybrook.edu:'$desktopDir'/ '$PWD
+   echo $command
+   eval $command
+else
+   for f in $@ 
+   do
+      command='rsync -avz --progress minhhoai@sbminhhoai.cs.stonybrook.edu:'$desktopDir'/'$f' '$PWD
+      echo $command
+      eval $command
+   done
+fi

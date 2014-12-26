@@ -1,0 +1,477 @@
+classdef ML_pSVM
+    % Permutation SVM for multiple instance learning problem
+    % By: Minh Hoai Nguyen (minhhoai@robots.ox.ac.uk)
+    % Created: 15-Aug-2013
+    % Last modified: 15-Aug-2013
+
+    methods (Static)
+        
+        
+        % Train permutation SVM
+        % Bs: 1*n cell structure for bags of instances. Bs{i} is a d*m_i matrix for m_i instances
+        % lb: n*1 label vector, lb(i) is 1 or -1.
+        % C: C for SVM
+        % This solves the optimization problem
+        %   min_{w,s,b} 0.5*(w'*w)*(s'*s) + C*sum_i xi_i
+        %          s.t. max_P lb(i)*(w'*Bs{i}*P*s + b) >= 1 - xi_i
+        %               xi_i >= 0
+        %               s(1) >= ... >= s(m)
+        function [w, b, s] = train(Bs, lb, C, initOpt)
+            nIter1 = 10;
+            nIter2 = 20;
+            %m = min(20, median(cellfun(@(x)size(x,2), Bs))); % sample m instances per bag             
+            m = 100;
+            tol = 1e-4;
+            
+            n = length(Bs);
+            d = size(Bs{1},1);
+            
+            % reorder the bags, putting positive first
+            posIdxs = lb == 1;
+            nPos = sum(posIdxs);
+            nNeg = n - nPos;
+            Bs = [Bs(posIdxs), Bs(~posIdxs)]; 
+            lb = [ones(nPos,1); -ones(nNeg,1)]; 
+            s = zeros(m,1); s(1) = 1;
+%             s = 1/m*ones(m,1);
+            
+            % structure to make sure make each bag has exactly m instances
+            % we replicate the indexes instead of the data 
+            irIdxs = cell(1, n); 
+            
+            % initialization             
+            BR = zeros(d, n); % bag representative
+            if strcmpi(initOpt, 'mean')                
+                for i=1:n
+                    BR(:,i) = mean(Bs{i}, 2)*sqrt(m); % assume s = 1/sqrt(m)*ones(m,1), i.e., ||s|| =1
+                end;                        
+            elseif strcmpi(initOpt, 'neg-mining')
+                AllBs = cat(2, Bs{lb == -1});
+                for i=1:nPos
+                    minL1Dist = zeros(1, size(Bs{i},2));
+                    for j=1:size(Bs{i},2)
+                        Diff = repmat(Bs{i}(:,j), 1, size(AllBs,2)) - AllBs;
+                        l1dist = sum(abs(Diff), 1); 
+                        minL1Dist(j) = min(l1dist); % nearest neighbor
+                    end;
+                    [~,maxIdx] = max(minL1Dist); % instance with highest nn distance to negative
+
+%                     l2Dist = ml_sqrDist(Bs{i}, AllBs);
+%                     minL2Dist = min(l2Dist, [], 2); % nearest neighbor distances
+%                     [~,maxIdx] = max(minL2Dist);
+
+                    BR(:,i) = Bs{i}(:,maxIdx);
+                end;   
+                for i=nPos+1:n
+                    BR(:,i) = mean(Bs{i},2);                    
+                end;
+            elseif strcmpi(initOpt, 'random')
+                for i=1:n
+                    BR(:,i) = Bs{i}(:, randsample(size(Bs{i},2), 1));
+                end;                
+            else
+                error('unknow init option');
+            end;
+            [w, b] = ML_pSVM.linearSvm_primal(BR, lb, 1:n, C);            
+            clear BR;
+            
+            % coordinate descent for permutation of positive bags
+            iter1objs = zeros(1, nIter1);
+            for iter1=1:nIter1                
+                fprintf('=======> iter: %d\n', iter1);
+                % update the order of instances
+                IS = zeros(m, n); % instance score
+                for i=1:n                    
+                    score_i = Bs{i}'*w;
+                    [irIdxs{i}, IS(:,i)] = ML_pSVM.scoreSample(score_i, m);                    
+                end;                
+                
+                % update s, by solving a quad prog
+                objVal = ML_pSVM.cmpObj(Bs, lb, C, w, b, s);
+                fprintf('  Before updating s: %.6f\n', objVal);
+                
+                wnorm2 = w'*w;
+                [s, b, objVal] = ML_pSVM.update_s(IS, lb, C/wnorm2);
+                objVal = objVal*wnorm2;
+                fprintf('  After updating s:  %.6f\n', objVal); 
+                iter1objs(iter1) = objVal;
+                                
+                % rescale w, s so that norm of s is 1
+                snorm = sqrt(s'*s);
+                s = s/snorm; % maintain L2-norm of s is 1
+                w = w*snorm;
+                
+                % update bag representative for positive                                
+                posBR = zeros(d, nPos);
+                for i=1:nPos                    
+                    posBR(:,i) = Bs{i}(:, irIdxs{i})*s;                    
+                end;
+                
+                % reset the representative for negative
+                negBR = zeros(d, nNeg); 
+                in2bagMap = 1:nNeg; % mapping from neg data instances to neg bags
+                for i=1:nNeg
+                    negBR(:,i) = Bs{i+nPos}(:, irIdxs{i+nPos})*s;
+                end;
+                                
+                % Update w, using constraint generation, for permuations of instances in negative bags
+                for iter2=1:nIter2
+                    % figure out the slack group from the in2bagMap
+                    slackGrp = {};
+                    grpCnt = 0;
+                    for j=1:nNeg
+                        idxs = find(in2bagMap == j); % instances from bag j
+                        if length(idxs) > 1
+                            grpCnt = grpCnt + 1;
+                            slackGrp{grpCnt} = idxs + nPos;
+                        end;
+                    end;
+                                        
+                    [w, b, objVal] = ML_pSVM.linearSvm_primal([posBR, negBR], ...
+                        [ones(nPos,1); -ones(size(negBR,2),1)], [1:nPos, nPos + in2bagMap], C);                    
+                    fprintf('  iter: %d-%d, objVal: %g\n', iter1, iter2, objVal);
+                                        
+                    score4neg = negBR'*w + b;
+                    
+                    % find the max score for negative bags
+                    score4negBag = -inf(nNeg,1);      
+                    for j=1:nNeg
+                        idxs = find(in2bagMap == j); % instances from bag j
+                        if ~isempty(idxs)
+                            score4negBag(j) = max(score4neg(idxs));                                                    
+                        end;
+                    end
+                    
+                    
+                    % remove untight negative constraints
+                    removeIdxs = score4neg < -1 - tol;
+                    negBR(:, removeIdxs) = [];
+                    in2bagMap(removeIdxs) = [];
+                    fprintf('  nNegRemoved: %d\n', sum(removeIdxs));
+                    
+                    % generate most violated constraints for negative
+                    newNegBR = zeros(d, nNeg);
+                    for i=nPos+1:n                        
+                        score_i = Bs{i}'*w;                        
+                        irIdxs{i} = ML_pSVM.scoreSample(score_i, m);                        
+                        newNegBR(:,i-nPos) = Bs{i}(:, irIdxs{i})*s;
+                    end;
+                    
+                    score4newNeg = newNegBR'*w + b;
+                    
+                    newConstrIdxs = and(score4newNeg > score4negBag + tol, score4newNeg > -1 + tol);
+                    
+                    nNewConstr = sum(newConstrIdxs);
+                    if nNewConstr == 0 
+                        fprintf('    No new constraint, termininating CG\n');
+                        break;
+                    end 
+                    
+                    newIn2bagMap = 1:nNeg;
+                    in2bagMap = [in2bagMap, newIn2bagMap(newConstrIdxs)];
+                    negBR = cat(2, negBR, newNegBR(:,newConstrIdxs));
+                    fprintf('    nNewConstr: %d, total: %d\n', nNewConstr, size(negBR,2));
+                end
+                
+                if (iter1objs(iter1) - objVal) < 1e-3*iter1objs(iter1)
+                    fprintf('  Decrease in obj val is small, terminating outter loop\n');
+                    break;
+                end;
+            end;
+        end;
+        
+        
+        % A deterministic sampling method, based on the score
+        % score: n*1 vector
+        % m: number of points to sample
+        function [sampleIdxs, sampleScore] = scoreSample(score, m)
+            score = score(:);
+            n = length(score);
+            [~, sortedIdxs] = sort(score, 'descend');
+            
+            q = floor(m/n); % number of full rounds
+            r = m - n*q; % remainder
+            
+            sampleIdxs = [];
+            if q > 0
+                sampleIdxs = repmat(sortedIdxs, q, 1); 
+            end;
+            sampleIdxs = [sampleIdxs; sortedIdxs(1:r)];            
+            
+            sampleScore = score(sampleIdxs);
+            [sampleScore, sortedIdxs] = sort(sampleScore, 'descend');
+            sampleIdxs = sampleIdxs(sortedIdxs);
+        end;
+
+        
+        
+        % prediction
+        % Bs: 1*n cell structure for bags of instances. Bs{i} is a d*m_i matrix for m_i instances
+        % w: weight vector of SVM, b: bias term
+        % s: distribution weight vecor of non-increasding order        
+        function score = predict(Bs, w, b, s)
+            m = length(s);
+            n = length(Bs);
+            score = zeros(n, 1);
+            for i=1:n
+                score_i = Bs{i}'*w;
+                [~, score_i2] = ML_pSVM.scoreSample(score_i, m);                                
+                score(i) = score_i2'*s;
+            end;            
+            score = score + b;
+        end
+        
+        % compute objective value from representative items
+        function objVal = cmpSvmObj(D, lb, slackGrp, C, w, b)
+            svmScore = D'*w + b; % before adding the bias term
+            xi = max(1 - lb.*svmScore, 0);
+            Cxi = C.*xi;
+            nonSlgrMems = setdiff(1:length(lb), cat(2, slackGrp{:}));
+            slgrCxi = zeros(1, length(slackGrp));
+            for i=1:length(slackGrp)
+                slgrCxi(i) = max(Cxi(slackGrp{i}));
+            end;
+            objVal = 0.5*(w'*w) + sum(Cxi(nonSlgrMems)) + sum(slgrCxi);
+        end;
+        
+        % compute the objective value
+        function [objVal, xi] = cmpObj(Bs, lb, C, w, b, s)
+            n = length(Bs);
+            m = length(s);
+            score = zeros(n, 1);
+            for i=1:n
+                score_i = Bs{i}'*w;                 
+                [~, score_i2] = ML_pSVM.scoreSample(score_i, m);                
+                score(i) = score_i2'*s;                    
+            end;
+            score = score + b;
+            xi = max(0, 1 - lb.*score);
+            objVal = 0.5*(w'*w)*(s'*s) + sum(C.*xi);            
+        end
+        
+        
+        % D: d*n matrix
+        % lb: n*1 vector of 1 or -1 for label
+        % Solve the linear programming:
+        %   min_{s, b} \sum_i C_i*xi_i
+        %          st. lb(i)*(s'*D(:,i) + b) >= 1 - xi_i
+        %              xi_i >= 0
+        %              s_1 >= s_2 >= ... >= s_d
+        %              sum_i s_i = 1
+        function [s, b, objVal, xi] = update_s(D, lb, C)
+            [d, n] = size(D);
+            
+            % variable x = [s; b; xi] = [s_1; ...; s_d; b; xi_1; ...; xi_n];
+            cplex = Cplex('pSVM');
+            cplex.Model.sense = 'minimize';
+            
+            d1  = d+1;  
+            d1n = d1+n; % number of variables
+            
+            % Add linear part of the objective
+            obj = zeros(d1n,1);
+            obj(d1+1:d1n) = C;
+            
+            % Add to the objective: sum_i C_i*xi_i
+            % cplex.Model.obj = obj; % this syntax doesn't work, use the below
+            cplex.addCols(obj);
+                                                
+            % Add constraint: xi_i >= 0                                    
+            lbound = -inf(d1n,1);
+            lbound(d1+1:d1n) = 0;
+            cplex.Model.lb = lbound;
+            
+            % Add to objective: 0.5*||s||^2;
+            Q = zeros(d1n, d1n); 
+            for j=1:d                
+                Q(j,j) = 1;                
+            end
+            cplex.Model.Q = sparse(Q);
+
+            % Add constraint that lb(i)*(s'*D(:,i) + b) >= 1 - xi_i
+            constrVecs = D'.*repmat(lb, 1, d);
+            constrVecs = sparse([constrVecs, lb, eye(n)]);
+            cplex.addRows(ones(n,1), constrVecs, inf(n,1));
+
+%             % Add constraint that sum_i s_i = 1 
+%             constrVec = zeros(1, d1n);
+%             constrVec(1:d) = 1;
+%             cplex.addRows(1, sparse(constrVec), 1);            
+
+            % Add constraint: s_1 >= s_2 >= ... >= s_d       
+            constrVecs = zeros(d-1, d1n);
+            linIdx = sub2ind([d-1, d1n], 1:(d-1), 1:(d-1));
+            constrVecs(linIdx) = 1;
+            constrVecs(linIdx + (d-1)) = -1;
+            cplex.addRows(zeros(d-1,1), constrVecs, inf(d-1,1));
+            
+            % Callback function for display
+            cplex.DisplayFunc = []; %@disp;
+                        
+            % solve
+            cplex.solve();
+            x = cplex.Solution.x;    
+            objVal = cplex.Solution.objval;
+            s = x(1:d);
+            b = x(d1);
+            xi = x(d1+1:end);
+        end
+        
+        
+        % see linearSvm for explanation of inputs
+        % D: d*n matrix
+        % lb: n*1 vector
+        % slackMap: n*1 vector, number from 1 to k for k slack variables
+        % C: a scalar or k*1 vector
+        function [w, b, objVal, xi] = linearSvm_primal(D, lb, slackMap, C)
+            [d, n] = size(D);
+            k = max(slackMap);
+            
+            % variable x = [s; b; xi] = [s_1; ...; s_d; b; xi_1; ...; xi_k];
+            cplex = Cplex('pSVM.linearSVM_primal');
+            cplex.Model.sense = 'minimize';
+            
+            d1  = d+1;
+            d1k = d1+k; % number of variables
+            
+            % Add linear part of the objective
+            % Add to the objective: sum_i C_i*xi_i
+            obj = zeros(d1k,1);
+            obj(d1+1:d1k) = C;
+            % cplex.Model.obj = obj; % this syntax doesn't work, use the below
+            cplex.addCols(obj);
+            
+            
+            % Add to objective: 0.5*||w||^2;
+            Q = zeros(d1k, d1k); % allocate d non-zero entry for Q
+            for j=1:d                
+                Q(j,j) = 1;                
+            end            
+            cplex.Model.Q = sparse(Q);
+                        
+            % Add constraint: xi_i >= 0                                    
+            lbound = -inf(d1k,1);
+            lbound(d1+1:d1k) = 0;
+            cplex.Model.lb = lbound;
+            
+            % Add constraint that lb(i)*(w'*D(:,i) + b) >= 1 - xi_{slackMap(i)}            
+            constrVecs = D'.*repmat(lb, 1, d);
+            SM = zeros(n, k);
+            linIdx = sub2ind([n,k], 1:n, slackMap);
+            SM(linIdx) = 1;            
+            constrVecs = sparse([constrVecs, lb, SM]);
+            cplex.addRows(ones(n,1), constrVecs, inf(n,1));
+                        
+            % Callback function for display
+            cplex.DisplayFunc = []; %@disp;
+                        
+            % solve
+            cplex.solve();
+            x = cplex.Solution.x;    
+            objVal = cplex.Solution.objval;
+            w = x(1:d);
+            b = x(d1);
+            xi = x(d1+1:end);            
+        end
+        
+        % D:  d*n data matrix for n data points
+        % lb: n*1 label vector of 1, -1
+        % slackGrp: a 1*m cell structure for m group of data ids.
+        %   slackGrp{i} is the ids of data points that share the same slack variable        
+        %   Positive data and negative data points can share the same slack variable
+        %   For computation reason, it is better not to have group of with a single id        
+        %   A data point does not have to be in a group (ie., a single slack for its own).
+        %   A data point cannot belong two two groups
+        %       e.g., slackGrp = {}, all data points have separate slack
+        %       e.g., slackGrp = {[2,3,10]}, points 2, 3, 10 have the same slack
+        % C: either a positive scalar or a n*1 positive vector
+        %   C is the tradeoff for large margin and less constraint violation
+        %   If C is n*1 vector, C(i) is associated with the tradeoff value for i^th data point
+        %   Data points have the same slack variables must have the same value of C
+        % Let IndSlacks = ids that do not belong to any of slackGrp{j}        
+        % This function optimizes
+        %   min_{w} 0.5*||w||^2 + sum_{i in IndSlacks} C_i*alpha_i 
+        %                       + sum_{slack group j} C_grp_j*beta_j
+        %    s.t   y_i*(w'*x_i) + b >= 1 - alpha_i for in in IndSlacks
+        %          y_i*(w'*x_i) + b >= 1 - beta_j for all i in slackGrp{j}.
+        %          alpha_i >= 0, beta_j >= 0
+        % Note: there is no bias term, use linearSvm2 if you need bias term
+        function [w, b, alpha, dualObj, primalObj, xi] = linearSvm(D, lb, slackGrp, C)
+            tol = 1e-6;
+            K = D'*D;
+            maxTrial = 30;
+            n = length(lb);
+            for trialNo=1:maxTrial
+                % although K is semidefinite, cplex might complain that it is not because of 
+                % finite precision. In this case, we permute D and rerun
+                try                                      
+                    if trialNo ==1                        
+                        [alpha, dualObj] = ML_ShareSlackSvm.kernelSvm_cplex(K, lb, slackGrp, C, [], 0, 1);
+                    else
+                        perIdxs = randperm(n);                                                
+                        revIdxs = zeros(1, n); % for reversed mapping                        
+                        revIdxs(perIdxs) = 1:n;
+                        
+                        % need to permute slackGrp too
+                        slackGrp2 = cell(1, length(slackGrp));
+                        for i=1:length(slackGrp)
+                            slackGrp2{i} = revIdxs(slackGrp{i});
+                        end;
+               
+                        [alpha2, dualObj] = ML_ShareSlackSvm.kernelSvm_cplex(K(perIdxs,perIdxs), lb(perIdxs), slackGrp2, C, [], 0, 1);
+                        alpha = alpha2(revIdxs); % reverse the permutation
+                    end
+                    break; % if no error, break
+                catch me                             
+                end
+            end
+            
+            w = D*(alpha.*lb);
+            
+            rawSvmScore = D'*w; % before adding the bias term
+
+            % indexes of positive SVs
+            idxs = and(lb == 1, alpha > tol);
+            posSvScore = rawSvmScore(idxs); % score of positive support vectors    
+            bs(1) = 1 - max(posSvScore);    % If (and I say If) there exists a SV on the margin, 
+                                            % it must be the one with max score.
+            
+            % indexes of negative SVs
+            idxs = and(lb == -1, alpha > tol);
+            negSvScore = rawSvmScore(idxs); % score of negative SVs
+            bs(2) = - min(negSvScore) - 1;  % If (and I say If) there exists a SV on the margin, 
+                                            % it must be the one with max score.
+                                            % To see this, try: D = [0, 1, -2:0]; lb = [ones(2,1); -ones(3,1)];
+                                            % ML_pSVM.linearSvm(D, lb, {}, 0.025);
+                                            
+            % There must be at least one SV on the margin, because if there is no, we can move the
+            % threshold until we have one. However, we don't know if it would be on the positive on
+            % negative margin. So we need to test both, and pick the one with lower cost
+            
+            nonSlgrMems = setdiff(1:length(lb), cat(2, slackGrp{:}));
+            cost = zeros(1, 2);
+            for j=1:2
+                svmScore = rawSvmScore + bs(j);
+                xi = max(1 - lb.*svmScore, 0); 
+                
+                Cxi = C.*xi;                
+                slgrCxi = zeros(1, length(slackGrp));
+                for i=1:length(slackGrp)
+                    slgrCxi(i) = max(Cxi(slackGrp{i}));
+                end;
+                cost(j) = sum(Cxi(nonSlgrMems)) + sum(slgrCxi);                
+            end;
+            [minCost, minIdx] = min(cost);
+            b = bs(minIdx);
+            primalObj = 0.5*(w'*w) + minCost;
+            
+            fprintf('nTrial: %d, dual: %g, primal: %g\n', trialNo, dualObj, primalObj);
+
+            if dualObj < primalObj - 0.02
+                keyboard;
+                error('Duality gap is too big, something is wrong');
+            end;
+        end;
+    end    
+end
+

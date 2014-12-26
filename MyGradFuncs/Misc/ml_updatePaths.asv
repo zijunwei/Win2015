@@ -1,0 +1,14 @@
+function ml_updatePaths()
+         
+%    baseDir = '/cv/minhhoan/Study/MyGradFuncs/';
+   baseDir = 'D:\Study\Matlab Libs\MyGradFuncs/';
+
+   subDirs = {'Alignment', 'ComponentAnalysis', 'Dijkstra', 'Features', 'Kmeans', ...
+              'Pre-image', 'Classifier', 'Cosegment', 'DataAccess', 'Display', 'GraphCut', 'Misc'};
+   for i=1:length(subDirs)
+      addpath([baseDir subDirs{i}]);
+   end
+   
+   addpath('D:\Study\Matlab Libs\GoodLibs\qqinterp2/');
+
+   savepath;

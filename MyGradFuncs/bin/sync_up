@@ -1,0 +1,9 @@
+localDir=$PWD
+boxenDir=/cv/minhhoan/${localDir:12}
+command='rsync -avz '$PWD'/'$1' minhhoan@boxen.cv.ri.cmu.edu:'$boxenDir
+echo $command
+$command
+#rsync -avz $PWD/ minhhoan@boxen.cv.ri.cmu.edu:$boxenDir
+
+
+

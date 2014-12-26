@@ -1,0 +1,8 @@
+Modify from improved_trajectory_release, work by Cordelia Group on ICCV13.
+The modification is to take input as frame pattern instead of video file.
+The frames can be any image type.
+
+E.g.,
+
+> ./release/m_DenseTrackStab ./test_sequences/frames/frm_%06d.png > out.features
+> ./release/m_DenseTrackStab ./test_sequences/frames/frm_%06d.jpg > out.features

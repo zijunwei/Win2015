@@ -1,0 +1,11 @@
+/m_testMpieFacePtchs.m///////
+/m_testMpieFaceReg.m///////
+/m_testMpieShpAffAlgn.m///////
+/m_testMpieShpAffPCA.m///////
+/m_testMpieShpAffPCA2.m///////
+/m_testMpieShpAffPCA_huge.m///////
+/m_testMpieShpEuclidAlgn.m///////
+/m_testMpieShpEuclidPCA.m///////
+/m_testMpieShpEuclidPCA2.m///////
+/m_testMpieShpEuclidPCA_huge.m///////
+/m_testPreprocessData.m///////

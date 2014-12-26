@@ -1,0 +1,57 @@
+function [w, b] = ml_minhSVM(Data, label, C, shldDisp)
+% function [w, b] = ml_minhSVM(Data, label, C)
+% Learning the weights for linear SVM
+% This function tries to balance the size of two classes. 
+% This function also balances between C and # of constraints; thus
+% increasing the number of samples 
+%
+% Inputs:
+%   Data: Data matrix of size d*n, d: # features, n: # training data.
+%   label: corresponding labels of training data, this is column vector.
+%       the entries must be either 1 or -1.
+%   C: the parameter C of linear SVM.
+%   shldDisp: should display the training error?
+% Outputs:
+%   w: weights for each features.
+%   b: the b of the SVM.
+% By: Minh Hoai Nguyen (minhhoai@cmu.edu)
+% Date: 29 Nov 2008
+
+[d, n] = size(Data);
+nPos = sum(label == 1);
+nNeg = sum(label == -1);
+
+
+a1 = var(Data(:,label == 1), 0, 2);
+a2 = var(Data(:,label == -1), 0, 2);
+a = a1 + a2;
+
+% normalization factors for the weights.
+normCoeffs = sqrt(a/sum(a));
+normCoeffs(normCoeffs < eps) = 0; % too small, for numerical stability
+
+% weights for constraints
+constrW = zeros(n, 1);
+constrW(label == 1)  = 1/nPos;
+constrW(label == -1) = 1/nNeg;
+
+LabelData = repmat(label', d, 1).*Data;
+
+cvx_precision high;
+cvx_begin
+    variable w(d);
+    variable xi(n);
+    variable b;
+    minimize( sum(normCoeffs'*abs(w)) + C*(constrW'*xi));
+    subject to
+        LabelData'*w + b*label + xi >= 1;
+        xi >= 0;
+cvx_end
+
+
+if shldDisp
+    svmScore = w'*Data + b;
+    fprintf('true positive rate: %.2f\n', sum(svmScore(label == 1) > 0)/nPos);
+    fprintf('true negative rate: %.2f\n', sum(svmScore(label ==-1) < 0)/nNeg);    
+end;
+

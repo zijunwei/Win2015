@@ -1,0 +1,29 @@
+#usage: down_sachnoi startIdx endIdx newNamePrefix newNameStartIdx
+#example: down_sachnoi 6663 6665 papillon_ 28
+localDir=$PWD
+serverPath=http://sachnoionline.com/download.php?file
+desktopDir=/users/minhhoai/${localDir:12}
+
+startIdx=$1
+endIdx=$2
+newNamePrefix=$3
+newNameStartIdx=$4
+
+LIST=[1-10]
+
+if [ $# -eq 0 ]; then
+   echo 'syntax:  down_sachnoi startIdx endIdx newNamePrefix newNameStartIdx'
+   echo 'example: down_sachnoi 6663 6665 papillon_ 28'
+else
+   for ((i =$startIdx; i <= $endIdx; i++)) 
+   do
+      j=$((newNameStartIdx + i - startIdx));
+      u=$(printf '%02d' $j);
+      command='wget --tries=5 '$serverPath'='$i
+      echo $command
+      $command
+      command='mv download.php?file='$i' '$newNamePrefix$u'.mp3'
+      echo $command
+      $command
+   done
+fi

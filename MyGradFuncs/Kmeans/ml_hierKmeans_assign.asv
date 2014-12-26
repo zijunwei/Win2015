@@ -1,0 +1,49 @@
+function IDXs = ml_hierKmeans_assign(X, clustModel)    
+% Compute the cluster indexes for hierarchical kmeans.
+%
+% Inputs:
+%   X: data in ROW format
+%   IDXs: cluster indexes of the data points
+%       IDXs(:,i) is the indexes for clustering at depth i^th.
+%   clustModel: a tree structure for cluster model.
+%       The structure clustModel has the fields: 
+%       'nClusts', 'isLeaf', 'C', 'branches'
+%       nClusts: depth*1 vector for the numbers of clusters at level 1 to
+%       depth.
+% Outputs:
+%   IDX: cluster indexes
+% See also: ml_hierKmeans
+% By: Minh Hoai Nguyen (t-minguy@microsoft.com)
+% Date: 30 June 08 
+
+depth = length(clustModel.nClusts);
+if isempty(X)
+    IDXs = zeros(0,1);
+    return;
+elseif isempty(clustModel.C)
+    IDXs = ones(size(X, 1), depth);
+    return;
+end;
+
+Dist = ml_sqrDist(X', clustModel.C');
+[dc, IDX_top] = min(Dist, [], 2);    
+
+if clustModel.isLeaf
+    IDXs = repmat(IDX_top, 1, depth);
+else
+    IDXs = zeros(size(X,1), length(clustModel.nClusts));
+    nClusts = zeros(length(clustModel.nClusts) - 1,1);
+
+    for i=1:length(clustModel.branches)
+        IDX_top_i = IDX_top == i;
+        IDX_i = m_hierKmeans2_multi(X(IDX_top_i, :), clustModel.branches{i});
+        nClusts_i = clustModel.branches{i}.nClusts;
+        
+        if ~isempty(IDX_i)
+            IDXs(IDX_top_i,1:end-1) = repmat(nClusts',size(IDX_i,1),1)  + IDX_i;
+            nClusts = nClusts + nClusts_i;
+        end;
+        IDXs(IDX_top_i, end) = i;
+    end;
+end
+    

@@ -1,0 +1,13 @@
+function m_test_LR()
+    d = 5;
+    n = 1000;
+    D = randn(d, n);
+    w = 2*randn(d,1);
+    w0 = 2;
+    label = rand(n,1) < 1./(1+exp(-w0 - D'*w));
+%     label = 0.5 < 1./(1+exp(2 - D'*w));
+    
+    [estW0, estW] = ml_LR_gradient(D, label, 1000);
+    disp([ww');
+    disp(w2');
+    keyboard;

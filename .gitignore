@@ -1,0 +1,9 @@
+*.png
+*.jpg
+*.avi
+*.mp4
+*.txt
+*.mat
+!GMM.mat
+*.m~
+*.o

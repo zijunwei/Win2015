@@ -1,0 +1,10 @@
+function warpShp = ml_cmpMpieShp(im, shpParam, mShp, ShpBasis)
+
+
+mShp2 = mShp + shpBasis*shpParam(7:end);
+
+A = shpParam(1:6);
+M = [A(1), A(2), A(3); A(4), A(5), A(6); 0 0 1]; 
+warpShp = [mShp2, ones(68,1)]*M';
+
+

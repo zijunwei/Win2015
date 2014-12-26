@@ -1,0 +1,15 @@
+function GeoDist = ml_geodesicDist(Dist, k)
+% function GeoDist = ml_geodesicDist(D, k)
+% Compute Geodesic distance between any two data points
+% Inputs:
+%   Dist: n*n matdata matrix in column format, this is a d*n matrix
+%   k: number of nearest neighbors used to construct nearest neighbor graph.
+%   distFuncHandle: a function handler for distance between matrixes.
+% Ouputs:
+%   GeoDist: a n*n matrix for geodesic distance between data points in D.
+% By: Minh Hoai Nguyen
+% Date: 18 May 2008
+
+n = size(Dist, 2);
+nnGraph = ml_nnGraph(Dist, k);
+GeoDist = dijkstra(nnGraph, 1:n);

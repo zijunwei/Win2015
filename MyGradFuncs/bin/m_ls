@@ -1,0 +1,14 @@
+currDir=$PWD
+
+if [ $# -eq 0 ]; then
+   command='usage: m_ls str2replace newStr'
+   echo $command
+else
+   #command='rsync -avz '$PWD'/'$1' minhhoai@titan.robots.ox.ac.uk:'$desktopDir
+   newDir=${currDir/$1/$2}
+   echo 'current dir: '$currDir
+   echo 'contents of: '$newDir
+   command='ls '$newDir
+   echo $command
+   $command
+fi
