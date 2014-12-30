@@ -101,12 +101,12 @@ classdef ML_FfmpegParse
                 
                 cmd = sprintf('rm %s', tmpFile2);
                 fprintf('%s\n', cmd);
-                system(cmd);
+%                 system(cmd);
             end
 
             cmd = sprintf('rm %s', tmpFile);            
             fprintf('%s\n', cmd);
-            system(cmd);
+%             system(cmd);
             
             cmd = sprintf('rm %s', tmpFile_err);            
             fprintf('%s\n', cmd);

@@ -3,21 +3,28 @@ classdef videoOperations
     % functions:
     %
     properties (Constant)
-        ffmpegBin = '/usr/local/bin/ffmpeg';
+        ffmpegBin='/usr/local/bin/ffmpeg';
+        
+        
     end;
+    
     
     methods (Static)
         
-        function extractFVWhole(input_file,save_file)
-            save_file_name=ml_full2shortName(input_file);
-            save_file=fullfile(save_file,[save_file_name,'.mat']);
-            cmd=['touch ' ,save_file];
-            system(cmd);
+        % do extractions with video specifications
+        function extractFVWhole_sp(input_file,save_file)
+            
+            %clip.flip = 1; % flip horizontally
+            %opts.ffmpegBin = M_TestVidFuncs.ffmpegBin;
+            opts.fps = 10;
+            opts.newH = 360;
+            %opts.frmQuality = '-q:v 4';
+            %opts.frmExt = 'jpg';
+            %ML_VidClip.extFrms(clip2, outFrmDir2, opts);
             clip.file = input_file;
             
-            outFrmDir = 'frames'+ml_randStr();
-            %opts.ffmpegBin = '/opt/local/bin/ffmpeg';
-            opts.ffmpegBin = M_TestVidFuncs.ffmpegBin;
+            outFrmDir =[ 'frames',ml_randStr()];
+            opts.ffmpegBin = videoOperations.ffmpegBin;
             
             % first extract frames
             ML_VidClip.extFrms(clip, outFrmDir, opts);
@@ -36,7 +43,34 @@ classdef videoOperations
             % demo 4 is not complete running svm
             cmd = sprintf('rm -rf %s', outFrmDir);
             fprintf('%s\n', cmd);
-            system(cmd);
+            %             system(cmd);
+        end;
+        
+        
+        function extractFVWhole(input_file,save_file)
+            clip.file = input_file;
+            
+            outFrmDir =[ 'frames',ml_randStr()];
+            opts.ffmpegBin = videoOperations.ffmpegBin;
+            
+            % first extract frames
+            ML_VidClip.extFrms(clip, outFrmDir, opts);
+            
+            imFiles = ml_getFilesInDir(outFrmDir, 'png');
+            
+            
+            nFrm = length(imFiles);
+            gmmModelFile = 'GMM.mat'; % the GMM model file for Fisher Vector encoding
+            % Replace it with your own model file if necessary
+            
+            
+            frmIdx=1:1:nFrm;
+            fv = ML_IDTD.fvEncode4dir(outFrmDir, 'png', frmIdx, gmmModelFile);
+            save(save_file,'fv');
+            % demo 4 is not complete running svm
+            cmd = sprintf('rm -rf %s', outFrmDir);
+            fprintf('%s\n', cmd);
+           % system(cmd);
             
         end;
         
