@@ -118,7 +118,8 @@ classdef ML_Ridge
         %   alphas, b: coefficients and bias, for test data the predict value: K_tst*alphas + b
         function [alphas, b] = kerRidgeReg(K, y, lambda, s) 
             n = size(K,1);
-            K = K.*repmat(s, 1, n); % K = diag(s)*K
+            K = K.*repmat(s, 1, n); %
+           % K = diag(s)*K;
             diagIdxs = sub2ind([n,n], 1:n, 1:n);
             K(diagIdxs) = K(diagIdxs) + lambda; % K = K + lambda*eye(n);                        
             K = [K, s; ones(1,n), 0];                        
