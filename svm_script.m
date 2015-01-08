@@ -1,7 +1,7 @@
 clear;
 
 % select different mat file 
-load('/Users/zijunwei/Dropbox/HollywoodData/hollywood2_fv_thread.mat');
+load('hollywood2_fv_thread_l2.mat');
 %load('/Users/zijunwei/Dropbox/HollywoodData/hollywood2.mat')
 addpath_recurse('./MyGradFuncs');
 addpath('~/Dev/MatlabLibs/libsvm/matlab/');
