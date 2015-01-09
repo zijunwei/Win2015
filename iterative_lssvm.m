@@ -14,7 +14,7 @@ n=length(trLb);
 Lambda0=Lambda*n;
 while(1)
     fprintf('training LSSVM model  iteration %d\n', idx);
-    idx=idx+1;
+    
     
     s=ones(n,1)/(n);
     
@@ -31,6 +31,7 @@ while(1)
     else
         break;
     end
+    idx=idx+1;
 end;
 
 
@@ -46,7 +47,7 @@ for i=1:1:length(pos_ind)
     end
     
     sub_sample=Zj_Normalization.l2(sub_sample);
-    s_scores=alpha*(trD*sub_sample')+b;
+    s_scores=alpha'*(trD*sub_sample')+b;
     [~,idx]=max(s_scores);
     if idx~=1 && ~Zj_MatrixChecking.isrow(sub_sample(idx,:),trD)
         
