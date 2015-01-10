@@ -28,7 +28,6 @@ load('argumented_fv_train.mat'); % load all the training threads
 lamda=1e-6;
 
 
-
 i=1;
 load(sprintf('%s_arg_neg.mat',classTxt{i}));
 trLb_i=raw_trLb(i,:);
