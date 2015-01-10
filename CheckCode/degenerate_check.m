@@ -7,9 +7,17 @@ classTxt = {'AnswerPhone', 'DriveCar', 'Eat', 'FightPerson', 'GetOutCar', 'HandS
     'HugPerson', 'Kiss', 'Run', 'SitDown', 'SitUp', 'StandUp'};
 
 for i=1:1:length(classTxt)
-    load(sprintf('%s_arg_neg.mat',classTxt{i}));
-    pn_condi(1,trD,classTxt{i},trLb);
-    pn_condi(-1,trD,classTxt{i},trLb);
+    load(sprintf('%s_arg_neg_l2.mat',classTxt{i}));
+    trK=trD*trD';
+    isCond=Zj_MatrixChecking.iscondition(trK);
+    if isCond
+        
+        warning('%s is in bad condition\n',classTxt{i});
+    else
+        warning('%s is good!\n',classTxt{i});
+    end
+         pn_condi(1,trD,classTxt{i},trLb);
+         pn_condi(-1,trD,classTxt{i},trLb);
     
 end
 

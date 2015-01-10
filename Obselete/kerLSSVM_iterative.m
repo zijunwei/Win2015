@@ -2,7 +2,7 @@
 % trLb: 12*n label matrix for training data should be +1 and -1
 % trLb(i,:) is binary lable vector for class i. trLb(i,j) is the label of video j for class i.
 % it: set number of iterations to stop the lssvm classifer
-function aps = singleKerLSSVM_iterative(Lambda, trK, trLb, tstK, tstLb,it)
+function aps = kerLSSVM_iterative(Lambda, trK, trLb, tstK, tstLb,it)
 addpath('/Users/zijunwei/Dev/MatlabLibs/libsvm/matlab');
 % trK = trD*trD';
 % tstK = tstD*trD';

@@ -7,7 +7,7 @@
 % files, if the empty files are deleted, there is a total of 6078
 % ****the next step might be to find a way to avoid empty files better than ****
 
-function fv_struct=loadfv2struct(file_dir_string)
+function fv_struct=read_fv2struct_all(file_dir_string)
 fv_struct = struct('name',{},'fv',{},'size',{});
 % file_dir_string='/Users/zijunwei/Dev/Win2015/DataFromServer/fv_thread'; % 6078 files
 

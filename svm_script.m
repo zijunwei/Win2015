@@ -1,5 +1,9 @@
 clear;
-
+% this script runs the 4 most fundamental experiments 
+% 1. no_thread fv+linear svm
+% 2. no_thread fv+ lssvm
+% 3. thread fv   + linear svm
+% 4. thread fv   + lssvm
 % select different mat file 
 %load('hollywood2_fv_thread_l2.mat');
 %load('/Users/zijunwei/Dropbox/HollywoodData/hollywood2.mat')

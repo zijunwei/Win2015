@@ -15,7 +15,7 @@ classTxt = {'AnswerPhone', 'DriveCar', 'Eat', 'FightPerson', 'GetOutCar', 'HandS
 fv_dim=109056;
 %training stage
 % extracting positive data
-for idx=1:1:1
+for idx=1:1:length(classTxt)
 fprintf('processing %d \n',idx);
 refinfo=read_clipsets(training_clipset{idx});
 pos_lb=find(refinfo.label==1);
@@ -45,10 +45,5 @@ trD=Zj_Normalization.l2(trD);
 trLb=[ones(1,length(pos_lb)),-1*ones(1,size(neg_fv,1))];
 
 
-% extacting testing data
-% tst_refinfo=read_clipsets(testing_clipset{idx});
-% tstLb=tst_refinfo.label;
-
-
-Zj_IO.savefast(sprintf('%s_arg_neg_l2.mat',classTxt{idx}),'trD','trLb');
+save(sprintf('%s_arg_neg_l2.mat',classTxt{idx}),'trD','trLb','-v7.3');
 end

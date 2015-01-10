@@ -1,5 +1,5 @@
 % this function iteratively update the traning examples based on the scores
-function [alpha,b,trD]=iterative_lssvm(Lambda,trD,trLb,arg_fv,pos_ind)
+function [alpha,b,trD]=lssvm_iterative(Lambda,trD,trLb,arg_fv,pos_ind)
 % tst Kernel can be done only once outside
 
 

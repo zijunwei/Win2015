@@ -1,7 +1,7 @@
 % this function generats the file names of training as well as testing
 % categories
 
-function [trainingclipsets,testingclipsets]=labelsfromfile(input_dir)
+function [trainingclipsets,testingclipsets]=labelsfromclipset(input_dir)
 
 
 training_pattern='*_train.txt';

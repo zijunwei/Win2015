@@ -33,7 +33,7 @@ i=1;
 load(sprintf('%s_arg_neg.mat',classTxt{i}));
 trLb_i=raw_trLb(i,:);
 pos_ind=find(trLb_i==1);
-[alpha,b,trD]=iterative_lssvm(lamda,trD,trLb,arg_fv,pos_ind);
+[alpha,b,trD]=lssvm_iterative(lamda,trD,trLb,arg_fv,pos_ind);
 % test
 confid=alpha*(trD*tstD')+b;
 aps(i)=ml_ap(confid,tstLb,0);
