@@ -6,7 +6,7 @@
 
 
 clear;
-load('argumented_fv_train.mat');
+load('fv_train_td_struct.mat');
 load('clipset_macmini.mat');
 
 classTxt = {'AnswerPhone', 'DriveCar', 'Eat', 'FightPerson', 'GetOutCar', 'HandShake', ...

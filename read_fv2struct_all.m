@@ -8,15 +8,15 @@
 % ****the next step might be to find a way to avoid empty files better than ****
 
 function fv_struct=read_fv2struct_all(file_dir_string)
-fv_struct = struct('name',{},'fv',{},'size',{});
+fv_struct = struct('filename',{},'fv',{},'size',{});
 % file_dir_string='/Users/zijunwei/Dev/Win2015/DataFromServer/fv_thread'; % 6078 files
 
 fv_files=dir(fullfile(file_dir_string,'*.mat'));
 
 for i=1:1:length(fv_files)
-    fv_struct(i).name=fv_files(i).name;
+    fv_struct(i).filename=fv_files(i).name;
     fv_struct(i).size=fv_files(i).bytes;
-    fv_struct(i).fv=form_fv( fullfile(file_dir_string,fv_struct(i).name));
+    fv_struct(i).fv=read_fv_from_file( fullfile(file_dir_string,fv_struct(i).filename));
     
     
 end

@@ -19,7 +19,7 @@ fv_vec=[fv.trajXY ;fv.trajHog ;fv.trajHof ;fv.trajMbh];
 if length(fv_vec)~=dim
    warning(['Caution! ',input_file,' fv dimension inconsistent']) ;
 end
-fv_vec=fv_vec';
+% fv_vec=fv_vec';
 
 end
 
