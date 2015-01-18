@@ -5,7 +5,7 @@
 % arg_fv.fv    --   sub-file fisher vectors for each sub-file
 % NOT Normalized 
 
-function arg_fv=fv_argument()
+function arg_fv=read_fv2struct()
 % setup my own function
 run('../ZFunc/Zj_Setup.m');
 max_file=3;

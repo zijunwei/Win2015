@@ -1,7 +1,6 @@
 % experiment prep obselete
 % extract thread video
-% positive data: sum up of all positive threads in a video. i.e the first
-%                item in fv_arg
+% positive data: sum up of all positive threads in a video. 
 % negative data: all single threads in negative data
 
 
