@@ -6,8 +6,6 @@ function aps = kerSVM(C, trD, trLb, tstD, tstLb,classTxt)
     trK = trD'*trD;
     tstK = tstD'*trD;
     
-%     classTxt = {'AnswerPhone', 'DriveCar', 'Eat', 'FightPerson', 'GetOutCar', 'HandShake', ...
-%                     'HugPerson', 'Kiss', 'Run', 'SitDown', 'SitUp', 'StandUp'};
 
     fprintf('Train SVMs\n');                        
     trK = [(1:size(trK,1))', trK]; 

@@ -13,5 +13,5 @@ addpath('~/Dev/MatlabLibs/libsvm/matlab/');
 % case 1 kersvm
 %aps=kerSVM(100,trD',trLb,tstD',tstLb,Lb_sets);
 % case 2 lssvm
-aps=kerLSSVM(1e-6,trD',trLb,tstD',tstLb,Lb_sets);
+aps=kerLSSVM
 

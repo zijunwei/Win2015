@@ -2,28 +2,29 @@
 % load positive data -- annotated and negative data : single threads then see the results of the
 % annotated
 % clear;
-% Init;
-%  load('gt_positive.mat');
-%  load('hollywood2_thread');
-%  load('uid_tr_struct.mat');
-%  %load all negative threads
-%  fv_cell=preprocessing_uid_struct2(fv_info);
-%  load('uid_tst_struct.mat');
-% %  % preprocessing test dat:
-% fv_cell_tst=preprocessing_uid_struct2(fv_info);
+Init;
+ load('gt_positive.mat');
+ load('H2_tstLb');
+ load('H2_rawtrLb')
+ load('uid_tr_struct_NONl2.mat');
+ %load all negative threads
+ fv_cell=preprocessing_uid_struct2(fv_info);
+ load('uid_tst_struct_NONl2.mat');
+%  % preprocessing test dat:
+ fv_cell_tst=preprocessing_uid_struct2(fv_info);
 
 for i=1:1:12
-    fprintf('processing %s \n',Lb_sets{i});
-trLb_i=trLb(i,:);
+    fprintf('processing %s \n',classTxt{i});
+trLb_i=raw_trLb(i,:);
 
 negs=find(trLb_i==-1);
 neg_data=[fv_cell{negs}];
 
 fv_all=fv_pos{i};
 Lbs=[ones(size(fv_all,2),1);-1*ones(size(neg_data,2),1)];
-newtrD=[fv_all';neg_data'];
-newtrD=Zj_Normalization.l2(newtrD);
-tstD=Zj_Normalization.l2(tstD);
+newtrD=[fv_all,neg_data];
+newtrD=normalizations.power2(newtrD);
+newtrD=Zj_Normalization.l2_col(newtrD);
 Lambda=1e-6;
 aps(i) = kerLSSVM_singleCate_sub_testingdata(Lambda, newtrD, Lbs, fv_cell_tst, tstLb(i,:));
 end
