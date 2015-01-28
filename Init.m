@@ -9,5 +9,6 @@ run('./vlfeat/toolbox/vl_setup.m');
 
 addpath('./DataActionMat/');
 addpath('./DataUseful/')
+addpath('./exemplarsvm/')
 classTxt = {'AnswerPhone', 'DriveCar', 'Eat', 'FightPerson', 'GetOutCar', 'HandShake', ...
     'HugPerson', 'Kiss', 'Run', 'SitDown', 'SitUp', 'StandUp'};
